@@ -23,6 +23,7 @@ STATE_DIR=/var/lib/tm2119-power
 echo "Installing TM2119 Power Control for $DESKTOP_USER ($MANAGER)"
 install_runtime_dependencies "$MANAGER"
 "$ROOT/scripts/build-install-power-profiles-daemon.sh" --install-deps
+"$ROOT/scripts/build-install-radv-rembrandt.sh" --install-deps
 
 iasl -ve -p "$ROOT/acpi/tm2119-runtime" "$ROOT/acpi/tm2119-runtime.dsl" >/dev/null
 

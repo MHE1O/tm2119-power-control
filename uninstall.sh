@@ -17,6 +17,9 @@ rm -f /etc/systemd/system/power-profiles-daemon.service.d/90-tm2119-boost.conf
 rm -f /usr/local/libexec/power-profiles-daemon-tm2119
 rm -f /usr/local/bin/tm2119-power-profile
 rm -f /etc/modules-load.d/tm2119-power.conf
+rm -f /etc/environment.d/90-tm2119-radv.conf /etc/profile.d/tm2119-radv.sh
+rm -f /usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json
+rm -rf /usr/local/lib/tm2119-power/mesa
 rm -rf /usr/local/lib/tm2119-power /usr/local/share/tm2119
 
 if [ -f "$STATE_DIR/acpi-call-module" ]; then

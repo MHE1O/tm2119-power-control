@@ -66,6 +66,35 @@ install_ppd_build_dependencies() {
     esac
 }
 
+install_mesa_build_dependencies() {
+    local manager="$1"
+    case "$manager" in
+        pacman)
+            pacman -S --needed --noconfirm base-devel meson ninja python \
+                pkgconf curl ca-certificates xz patch bison flex glslang spirv-tools \
+                libdrm libxcb libxshmfence libxrandr wayland wayland-protocols \
+                libdisplay-info expat libelf zlib zstd
+            ;;
+        dnf)
+            dnf install -y gcc gcc-c++ meson ninja-build python3 \
+                pkgconf-pkg-config curl ca-certificates xz patch bison flex glslang \
+                spirv-tools-devel libdrm-devel libxcb-devel libxshmfence-devel \
+                libXrandr-devel wayland-devel wayland-protocols-devel \
+                libdisplay-info-devel expat-devel libelf-devel zlib-devel zstd-devel
+            ;;
+        apt)
+            DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                build-essential meson ninja-build python3 pkg-config curl \
+                ca-certificates xz-utils patch bison flex glslang-tools spirv-tools \
+                libdrm-dev libxcb1-dev libxcb-dri3-dev libxcb-present-dev \
+                libxcb-shm-dev libxcb-sync-dev libxcb-xfixes0-dev libxcb-randr0-dev \
+                libx11-xcb-dev libxshmfence-dev libxrandr-dev libwayland-dev \
+                wayland-protocols libdisplay-info-dev libexpat1-dev libelf-dev \
+                zlib1g-dev libzstd-dev
+            ;;
+    esac
+}
+
 desktop_user() {
     local user=
     if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != root ]; then

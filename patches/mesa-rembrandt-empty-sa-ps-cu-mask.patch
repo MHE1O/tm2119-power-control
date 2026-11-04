@@ -1,0 +1,19 @@
+--- a/src/amd/common/ac_gpu_info.c
++++ b/src/amd/common/ac_gpu_info.c
+@@ -2594,6 +2594,16 @@
+     * Disable the extra CUs for PS in other shader arrays to save power and thus
+     * increase clocks for busy CUs. In the future, we might disable or enable this
+     * tweak only for certain apps.
++    *
++    * An empty shader array does not make the populated arrays asymmetric.
++    * Some Rembrandt APUs report two SAs per SE with all six CUs in SA0.
+     */
++   for (unsigned se = 0; se < info->max_se; se++) {
++      for (unsigned sa = 0; sa < info->max_sa_per_se; sa++) {
++         if (!info->cu_mask[se][sa])
++            return ~0u;
++      }
++   }
++
+    return BITFIELD_MASK(info->min_good_cu_per_sa);
+ }

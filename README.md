@@ -15,6 +15,7 @@ It connects Xiaomi's firmware profile table to GNOME: **Fn+K**, GNOME Quick Sett
 - Two-way synchronization with `power-profiles-daemon` and GNOME Quick Settings.
 - Native GNOME Shell OSD on GNOME **45, 46, 47, 48, 49, and 50**—no notification daemon required.
 - Automatic dependencies, patched PPD build, `acpi_call` setup, CLI, systemd service, and user extension installation.
+- A minimal, source-verified Mesa RADV correction for Rembrandt systems whose empty second shader array incorrectly restricts pixel shaders to two of six CUs.
 - Arch Linux, Fedora / Nobara, and Ubuntu / Debian package-manager support.
 
 ## Installation
@@ -44,13 +45,17 @@ The installer:
 1. Installs ACPI, Python, PPD, compiler, and current-kernel header dependencies.
 2. Compiles `tm2119-runtime.dsl` with `iasl` and installs the resulting AML.
 3. Builds the pinned, TM2119-patched `power-profiles-daemon` and installs its systemd override.
-4. Uses an existing `acpi_call` module or builds the bundled GPL source against the running kernel.
-5. Installs and enables the root synchronization service and `/usr/local/bin/tm2119-power-profile`.
-6. Installs and enables the OSD extension for `$SUDO_USER` (or the user reported by `logname`).
+4. Downloads checksum-verified Mesa 26.2.6, applies only the Rembrandt empty-shader-array correction, and builds RADV without the other graphics drivers.
+5. Installs the corrected RADV library and Vulkan ICD under `/usr/local` without replacing distribution Mesa files, then selects it through `/etc/environment.d` and `/etc/profile.d`.
+6. Uses an existing `acpi_call` module or builds the bundled GPL source against the running kernel.
+7. Installs and enables the root synchronization service and `/usr/local/bin/tm2119-power-profile`.
+8. Installs and enables the OSD extension for `$SUDO_USER` (or the user reported by `logname`).
 
-An internet connection is required for package installation and the pinned PPD source checkout. Secure Boot may require signing the locally built `acpi_call` module; use your distribution's module-signing process if unsigned module loading is blocked.
+An internet connection is required for package installation and the pinned PPD and Mesa source downloads. Secure Boot may require signing the locally built `acpi_call` module; use your distribution's module-signing process if unsigned module loading is blocked.
 
-After a kernel update, rerun `./install.sh` if `acpi_call` is unavailable for the new kernel.
+**Log out and back in after installation** so desktop applications inherit `VK_ICD_FILENAMES=/usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json`. For the current shell only, run `source /etc/profile.d/tm2119-radv.sh`. Applications already running must be restarted.
+
+After a kernel update, rerun `./install.sh` if `acpi_call` is unavailable for the new kernel. To build the RADV correction without installing it, run `scripts/build-install-radv-rembrandt.sh --build-only`; `DESTDIR=/path/to/stage` stages an installation without root privileges.
 
 ## Usage
 
