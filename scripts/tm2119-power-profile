@@ -1,0 +1,11 @@
+#!/bin/sh
+PYTHONPATH=/usr/local/lib/tm2119-power
+TM2119_AML=/usr/local/share/tm2119/tm2119-runtime.aml
+export PYTHONPATH TM2119_AML
+
+if [ "$(id -u)" -eq 0 ] || [ "${1:-}" = osd ]; then
+    exec /usr/bin/python3 -m tm2119_power "$@"
+fi
+
+exec sudo /usr/bin/env "PYTHONPATH=$PYTHONPATH" "TM2119_AML=$TM2119_AML" \
+    /usr/bin/python3 -m tm2119_power "$@"

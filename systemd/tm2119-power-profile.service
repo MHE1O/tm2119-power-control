@@ -1,0 +1,15 @@
+[Unit]
+Description=TM2119 Fn+K and GNOME hardware power-profile synchronization
+Wants=power-profiles-daemon.service
+After=power-profiles-daemon.service
+
+[Service]
+Type=simple
+Environment=PYTHONPATH=/usr/local/lib/tm2119-power
+Environment=TM2119_AML=/usr/local/share/tm2119/tm2119-runtime.aml
+ExecStart=/usr/bin/python3 -m tm2119_power daemon
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target

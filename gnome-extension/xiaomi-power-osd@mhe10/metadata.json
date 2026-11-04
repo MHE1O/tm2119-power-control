@@ -1,0 +1,8 @@
+{
+  "uuid": "xiaomi-power-osd@mhe10",
+  "name": "TM2119 Power Profile OSD",
+  "description": "Shows TM2119 Fn+K and power-profile changes in GNOME Shell's native OSD",
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "version": 2,
+  "session-modes": ["user"]
+}

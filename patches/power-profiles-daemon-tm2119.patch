@@ -1,0 +1,59 @@
+diff --git a/src/power-profiles-daemon.c b/src/power-profiles-daemon.c
+index cf4f230..cd22f3a 100644
+--- a/src/power-profiles-daemon.c
++++ b/src/power-profiles-daemon.c
+@@ -151,7 +151,8 @@ typedef GType (*GTypeGetFunc) (void);
+ static GTypeGetFunc objects[] = {
+   /* Hardware specific profile drivers */
+   ppd_driver_fake_get_type,
+-  ppd_driver_platform_profile_get_type,
++  /* TM2119: HAC1 is applied by tm2119-power-profile.service.  The generic
++   * platform_profile driver targets unsupported firmware paths on this model. */
+   ppd_driver_intel_pstate_get_type,
+   ppd_driver_amd_pstate_get_type,
+ 
+diff --git a/src/ppd-driver-amd-pstate.c b/src/ppd-driver-amd-pstate.c
+index 6ed597e..9f985c0 100644
+--- a/src/ppd-driver-amd-pstate.c
++++ b/src/ppd-driver-amd-pstate.c
+@@ -16,6 +16,7 @@
+ #include "ppd-driver-amd-pstate.h"
+ 
+ #define CPUFREQ_POLICY_DIR "/sys/devices/system/cpu/cpufreq/"
++#define CPUFREQ_BOOST_PATH "/sys/devices/system/cpu/cpufreq/boost"
+ #define PSTATE_STATUS_PATH "/sys/devices/system/cpu/amd_pstate/status"
+ 
+ struct _PpdDriverAmdPstate
+@@ -196,6 +197,9 @@ apply_pref_to_devices (GPtrArray   *devices,
+   const char *min_freq;
+   g_autofree char *status = NULL;
+   g_autofree char *pstate_status_path = NULL;
++  g_autofree char *global_cpb_path = NULL;
++  g_autofree char *global_cpb = NULL;
++  gboolean global_cpb_disabled = FALSE;
+ 
+   if (profile == PPD_PROFILE_UNSET)
+     return TRUE;
+@@ -214,6 +218,13 @@ apply_pref_to_devices (GPtrArray   *devices,
+   cpb_pref = profile_to_cpb_pref (profile);
+   min_freq = profile_to_min_freq (profile);
+ 
++  /* A disabled global boost switch is an explicit platform policy.  Do not
++   * try to override it through the per-policy controls, which may reject
++   * such writes and abort the whole profile transition. */
++  global_cpb_path = ppd_utils_get_sysfs_path (CPUFREQ_BOOST_PATH);
++  if (g_file_get_contents (global_cpb_path, &global_cpb, NULL, NULL))
++    global_cpb_disabled = g_strchomp (global_cpb)[0] == '0';
++
+   for (guint i = 0; i < devices->len; ++i) {
+     const char *base = g_ptr_array_index (devices, i);
+     g_autofree char *epp = NULL;
+@@ -236,7 +247,7 @@ apply_pref_to_devices (GPtrArray   *devices,
+       return FALSE;
+ 
+     cpb = g_build_filename (base, "boost", NULL);
+-    if (g_file_test (cpb, G_FILE_TEST_EXISTS)) {
++    if (!global_cpb_disabled && g_file_test (cpb, G_FILE_TEST_EXISTS)) {
+       if (!ppd_utils_write (cpb, cpb_pref, error))
+         return FALSE;
+     }
