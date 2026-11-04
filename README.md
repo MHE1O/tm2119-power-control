@@ -83,7 +83,7 @@ journalctl -u tm2119-power-profile.service
 cd tm2119-power-control && ./uninstall.sh
 ```
 
-This disables and removes the TM2119 service, CLI, runtime ACPI assets, boot module configuration, and OSD extension. It removes the custom PPD binary and systemd override, then restarts the distribution's stock `power-profiles-daemon`. Distribution packages are left installed.
+This disables and removes the TM2119 service, CLI, runtime ACPI assets, boot module configuration, and OSD extension. It removes the custom PPD binary and systemd override, then restarts the distribution's stock `power-profiles-daemon`. It also removes the custom RADV library, Vulkan ICD manifest, and environment selection files, returning applications to the distribution Mesa driver after their next restart. Distribution packages are left installed.
 
 ## Architecture
 
@@ -98,6 +98,14 @@ A root Python service joins the ACPI generic-netlink multicast group and accepts
 ### PPD compatibility
 
 The included patch is against PPD commit `1a151ccd8bb42c050960f65ca3dee31effde6b36`. It skips per-policy boost writes when global CPU boost is disabled and disables the generic `platform_profile` driver on this model; TM2119's service owns that firmware path instead.
+
+### Rembrandt RADV correction
+
+On the affected TM2119, Rembrandt reports six active CUs in SE0/SA0 and an empty SA1. Mesa's generic GFX10.3 pixel-shader heuristic interpreted that topology as asymmetric and returned a two-CU mask, restricting pixel shaders to one of three WGPs. The patch returns the full CU mask when an SE/SA slot is empty; it preserves the original heuristic when all populated arrays are genuinely asymmetric.
+
+Validation through the unmodified Valheim capture harness showed repeatable default-present improvement from **22.297 FPS / 7.176 W GFX** to **44.948 and 44.962 FPS / 14.599 and 15.343 W GFX**. SQTT wave-cycle attribution changed from **97.46% / 1.27% / 1.26%** across WGP0/1/2 to **33.32% / 33.34% / 33.34%**. Immediate presentation measured **50.722 FPS** by elapsed time. These are sustained main-menu results, not a claim of identical playable-world Windows parity or a raw harness GREEN verdict.
+
+The correction changes no firmware, ACPI, SMU, kernel, clock-gating, or power-limit state. Only RADV is built and installed; distribution Mesa files remain untouched.
 
 ### Native OSD
 
