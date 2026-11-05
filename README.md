@@ -46,14 +46,14 @@ The installer:
 2. Compiles `tm2119-runtime.dsl` with `iasl` and installs the resulting AML.
 3. Builds the pinned, TM2119-patched `power-profiles-daemon` and installs its systemd override.
 4. Downloads checksum-verified Mesa 26.2.6, applies only the Rembrandt empty-shader-array correction, and builds RADV without the other graphics drivers.
-5. Installs the corrected RADV library and Vulkan ICD under `/usr/local` without replacing distribution Mesa files, then selects it through `/etc/environment.d` and `/etc/profile.d`.
+5. Installs `tm2119-cu-fix`, backs up the distribution RADV library, and atomically installs the corrected driver at the distribution path so Steam and pressure-vessel use it without environment overrides.
 6. Uses an existing `acpi_call` module or builds the bundled GPL source against the running kernel.
-7. Installs and enables the root synchronization service and `/usr/local/bin/tm2119-power-profile`.
+7. Installs and enables the root synchronization service, `/usr/local/bin/tm2119-power-profile`, and a service hook that reapplies the RADV correction after distribution Mesa updates.
 8. Installs and enables the OSD extension for `$SUDO_USER` (or the user reported by `logname`).
 
 An internet connection is required for package installation and the pinned PPD and Mesa source downloads. Secure Boot may require signing the locally built `acpi_call` module; use your distribution's module-signing process if unsigned module loading is blocked.
 
-**Log out and back in after installation** so desktop applications inherit `VK_ICD_FILENAMES=/usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json`. For the current shell only, run `source /etc/profile.d/tm2119-radv.sh`. Applications already running must be restarted.
+Restart games and other running Vulkan applications after installation. No custom Vulkan ICD, `VK_ICD_FILENAMES`, login-cycle, or desktop environment change is required.
 
 After a kernel update, rerun `./install.sh` if `acpi_call` is unavailable for the new kernel. To build the RADV correction without installing it, run `scripts/build-install-radv-rembrandt.sh --build-only`; `DESTDIR=/path/to/stage` stages an installation without root privileges.
 
@@ -77,13 +77,23 @@ systemctl status tm2119-power-profile.service
 journalctl -u tm2119-power-profile.service
 ```
 
+### Rembrandt CU diagnostic and rollback
+
+```sh
+tm2119-cu-fix check       # 0 = healthy/unaffected, 1 = affected driver is unpatched
+sudo tm2119-cu-fix fix    # back up stock RADV and install the correction
+sudo tm2119-cu-fix restore # roll back to the latest backed-up stock RADV
+```
+
+The checker reads the RADV topology reported by `vulkaninfo` and looks for AMD `0x1002:0x1681`, two shader arrays per SE, and an empty `SE0/SA1`. It detects `/usr/lib64/libvulkan_radeon.so` on Fedora/RHEL, `/usr/lib/libvulkan_radeon.so` on Arch, and `/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so` on Ubuntu/Debian. Stock backups live in `/var/lib/tm2119-power/backup/`; a distro update is backed up before the patched payload is reapplied. `tm2119-power-profile.service` runs the repair automatically whenever the service starts.
+
 ## Uninstallation
 
 ```sh
 cd tm2119-power-control && ./uninstall.sh
 ```
 
-This disables and removes the TM2119 service, CLI, runtime ACPI assets, boot module configuration, and OSD extension. It removes the custom PPD binary and systemd override, then restarts the distribution's stock `power-profiles-daemon`. It also removes the custom RADV library, Vulkan ICD manifest, and environment selection files, returning applications to the distribution Mesa driver after their next restart. Distribution packages are left installed.
+This disables and removes the TM2119 service, CLI, runtime ACPI assets, boot module configuration, and OSD extension. It removes the custom PPD binary and systemd override, then restarts the distribution's stock `power-profiles-daemon`. Before removing the RADV payload and repair hook, it restores the latest stock driver from the backup. Distribution packages are left installed.
 
 ## Architecture
 
@@ -105,7 +115,7 @@ On the affected TM2119, Rembrandt reports six active CUs in SE0/SA0 and an empty
 
 Validation through the unmodified Valheim capture harness showed repeatable default-present improvement from **22.297 FPS / 7.176 W GFX** to **44.948 and 44.962 FPS / 14.599 and 15.343 W GFX**. SQTT wave-cycle attribution changed from **97.46% / 1.27% / 1.26%** across WGP0/1/2 to **33.32% / 33.34% / 33.34%**. Immediate presentation measured **50.722 FPS** by elapsed time. These are sustained main-menu results, not a claim of identical playable-world Windows parity or a raw harness GREEN verdict.
 
-The correction changes no firmware, ACPI, SMU, kernel, clock-gating, or power-limit state. Only RADV is built and installed; distribution Mesa files remain untouched.
+The correction changes no firmware, ACPI, SMU, kernel, clock-gating, or power-limit state. Only RADV is replaced, using an atomic in-place install with a verified stock backup for rollback.
 
 ### Native OSD
 

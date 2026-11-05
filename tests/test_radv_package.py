@@ -72,15 +72,11 @@ class RadvPackageTests(unittest.TestCase):
                 (stage / "usr/local/lib/tm2119-power/mesa/libvulkan_radeon.so").read_text(),
                 "test driver\n",
             )
-            manifest_path = stage / "usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json"
-            manifest = json.loads(manifest_path.read_text())
-            self.assertEqual(
-                manifest["ICD"]["library_path"],
-                "/usr/local/lib/tm2119-power/mesa/libvulkan_radeon.so",
-            )
-            self.assertIn(
-                "VK_ICD_FILENAMES=/usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json",
-                (stage / "etc/environment.d/90-tm2119-radv.conf").read_text(),
+            self.assertTrue((stage / "usr/local/bin/tm2119-cu-fix").is_file())
+            self.assertFalse((stage / "etc/environment.d/90-tm2119-radv.conf").exists())
+            self.assertFalse((stage / "etc/profile.d/tm2119-radv.sh").exists())
+            self.assertFalse(
+                (stage / "usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json").exists()
             )
 
 

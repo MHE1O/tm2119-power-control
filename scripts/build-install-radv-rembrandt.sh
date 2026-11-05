@@ -71,40 +71,24 @@ fi
 ninja -C "$BUILD" -j "$JOBS"
 
 DRIVER="$BUILD/src/amd/vulkan/libvulkan_radeon.so"
-GENERATED_ICD="$BUILD/src/amd/vulkan/radeon_devenv_icd.x86_64.json"
 [ -f "$DRIVER" ] || fail "Mesa build did not produce $DRIVER"
-[ -f "$GENERATED_ICD" ] || fail "Mesa build did not produce $GENERATED_ICD"
 if [ "$BUILD_ONLY" = 1 ]; then
     echo "Built patched RADV: $DRIVER"
     exit 0
 fi
 
 LIB_DIR="$DESTDIR/usr/local/lib/tm2119-power/mesa"
-ICD_DIR="$DESTDIR/usr/local/share/vulkan/icd.d"
-ICD="$ICD_DIR/tm2119_radeon_icd.x86_64.json"
-install -d "$LIB_DIR" "$ICD_DIR" \
-    "$DESTDIR/etc/environment.d" "$DESTDIR/etc/profile.d"
+BIN_DIR="$DESTDIR/usr/local/bin"
+install -d "$LIB_DIR" "$BIN_DIR"
 install -m 0755 "$DRIVER" "$LIB_DIR/libvulkan_radeon.so"
-python3 - "$GENERATED_ICD" "$ICD" <<'PY'
-import json
-from pathlib import Path
-import sys
-
-manifest = json.loads(Path(sys.argv[1]).read_text())
-manifest["ICD"]["library_path"] = "/usr/local/lib/tm2119-power/mesa/libvulkan_radeon.so"
-Path(sys.argv[2]).write_text(json.dumps(manifest, indent=4) + "\n")
-PY
-printf '%s\n' \
-    'VK_ICD_FILENAMES=/usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json' \
-    > "$DESTDIR/etc/environment.d/90-tm2119-radv.conf"
-printf '%s\n' \
-    '# Select the TM2119-corrected RADV driver without replacing distribution Mesa.' \
-    'export VK_ICD_FILENAMES=/usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json' \
-    > "$DESTDIR/etc/profile.d/tm2119-radv.sh"
+install -m 0755 "$ROOT/scripts/tm2119-cu-fix.sh" "$BIN_DIR/tm2119-cu-fix"
 
 if [ -z "$DESTDIR" ]; then
-    echo "Installed patched RADV for TM2119. Log out and back in to activate it for desktop apps."
-    echo "Current-shell activation: source /etc/profile.d/tm2119-radv.sh"
+    rm -f /etc/environment.d/90-tm2119-radv.conf /etc/profile.d/tm2119-radv.sh \
+        /usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json
+    unset VK_ICD_FILENAMES VK_DRIVER_FILES
+    "$BIN_DIR/tm2119-cu-fix" fix
+    echo "Installed patched RADV in place; restart running games to load it."
 else
-    echo "Staged patched RADV under $DESTDIR"
+    echo "Staged patched RADV and tm2119-cu-fix under $DESTDIR"
 fi

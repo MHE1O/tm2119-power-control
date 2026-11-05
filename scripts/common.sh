@@ -31,16 +31,16 @@ install_runtime_dependencies() {
                 *) headers=linux-headers ;;
             esac
             pacman -S --needed --noconfirm acpica python power-profiles-daemon \
-                "$headers" make gcc
+                vulkan-tools "$headers" make gcc
             ;;
         dnf)
             dnf install -y acpica-tools python3 power-profiles-daemon \
-                "kernel-devel-$kernel" kernel-headers make gcc
+                vulkan-tools "kernel-devel-$kernel" kernel-headers make gcc
             ;;
         apt)
             apt-get update
             DEBIAN_FRONTEND=noninteractive apt-get install -y \
-                acpica-tools python3 power-profiles-daemon \
+                acpica-tools python3 power-profiles-daemon vulkan-tools \
                 "linux-headers-$kernel" make gcc
             ;;
     esac

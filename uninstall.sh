@@ -11,11 +11,14 @@ source "$ROOT/scripts/common.sh"
 UUID=xiaomi-power-osd@mhe10
 STATE_DIR=/var/lib/tm2119-power
 
+if [ -x /usr/local/bin/tm2119-cu-fix ]; then
+    /usr/local/bin/tm2119-cu-fix restore
+fi
 systemctl disable --now tm2119-power-profile.service 2>/dev/null || true
 rm -f /etc/systemd/system/tm2119-power-profile.service
 rm -f /etc/systemd/system/power-profiles-daemon.service.d/90-tm2119-boost.conf
 rm -f /usr/local/libexec/power-profiles-daemon-tm2119
-rm -f /usr/local/bin/tm2119-power-profile
+rm -f /usr/local/bin/tm2119-power-profile /usr/local/bin/tm2119-cu-fix
 rm -f /etc/modules-load.d/tm2119-power.conf
 rm -f /etc/environment.d/90-tm2119-radv.conf /etc/profile.d/tm2119-radv.sh
 rm -f /usr/local/share/vulkan/icd.d/tm2119_radeon_icd.x86_64.json

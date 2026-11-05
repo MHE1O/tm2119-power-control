@@ -7,6 +7,7 @@ After=power-profiles-daemon.service
 Type=simple
 Environment=PYTHONPATH=/usr/local/lib/tm2119-power
 Environment=TM2119_AML=/usr/local/share/tm2119/tm2119-runtime.aml
+ExecStartPre=/usr/local/bin/tm2119-cu-fix fix
 ExecStart=/usr/bin/python3 -m tm2119_power daemon
 Restart=on-failure
 RestartSec=2s
